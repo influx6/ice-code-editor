@@ -8,6 +8,9 @@ import 'package:js/js.dart' as js;
 import 'package:js/js_wrapping.dart' as jsw;
 import 'package:crypto/crypto.dart';
 
+import 'package:hub/hub.dart';
+import 'package:pipes/pipes.dart';
+
 import 'package:ctrl_alt_foo/keys.dart';
 
 part 'editor.dart';
@@ -33,3 +36,4 @@ part 'full/download_dialog.dart';
 part 'full/copy_dialog.dart';
 part 'full/remove_dialog.dart';
 part 'full/help_action.dart';
+part 'full/project.dart';
