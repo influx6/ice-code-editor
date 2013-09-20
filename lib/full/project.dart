@@ -20,20 +20,25 @@ class Project{
 	Pipe stream;
 	String id;
 	MapDecorator data;
+	ProjectElememt elem;
 	List history;
 	
-	static create(key) => new Project(key);
-	Project(this.id){
+	static create(key,elem) => new Project(key,elem);
+	
+	Project(this.id,this.element){
 		this.stream = Pipes.create(this.id);
+		this.elem.listen(this.stream.add);
 	}
 	
 	Project load(json){
 		this.data = new MapDecorator.from(json);
 		data.forEach((k,v){
+			
 			var a = this.stream.listen((n){
 				this.data.update(k,n);				
 			});
 			this.stream.add(k,a);
+			
 		});
 		return this;
 	}
@@ -59,7 +64,6 @@ class ProjectElement{
 	final Streamable pipe = Streamable.create();
 	final Streamable sink = Streamable.create();
 	Element element;
-	String title;
 	
 	ProjectElement(this.element){
 		this.pipe = Streamable.create();
@@ -72,15 +76,31 @@ class ProjectElement{
 			e.stopPropagation();
 			e.preventDefault();
 		});
-		this.stream.pause();
+		
+		this.sink.listen((n){
+			if(n !is Array) return;
+			var tag = n[0];
+			var content = n[1];
+			if(tag == 'lineNumber') this.element.setAttribute('lineNumber',content);
+			if(tag == 'created_at') this.element.setAttribute('createdAt',content);
+			if(tag == 'title') this.element.setAttribute('title',content);
+			if(tag == 'code') this.element.innerHTML = content;
+		});
+		
 	}
 	
 	void generate(){
+		this.pipe.pause();
 		this.pipe.send(['lineNumber',this.element.getAttribute('lineNumber')]);
 		this.pipe.send(['created_at',this.element.getAttribute('createdAt')]);
 		this.pipe.send(['updated_at',Date.now().toString()]);
+		this.pipe.send(['title',this.element.getAttribute('title')]);
 		this.pipe.send(['code',this.element.innerHTML]);
-		this.stream.resume();
+		this.pipe.resume();
+	}
+	
+	void listen(Function m){
+		this.pipe.listen(m);
 	}
 }
 
