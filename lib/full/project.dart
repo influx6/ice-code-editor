@@ -20,8 +20,10 @@ class Project{
 	Pipe stream;
 	String id;
 	MapDecorator data;
+	MapDecorator listeners;
 	ProjectElememt elem;
-	List history;
+// 	List _changes;
+// 	List history;
 	
 	static create(key,elem) => new Project(key,elem);
 	
@@ -32,12 +34,16 @@ class Project{
 	
 	Project load(json){
 		this.data = new MapDecorator.from(json);
-		data.forEach((k,v){
+		data.onAll((k,v){
 			this.data.update(k,v);				
 			this.elem.send([k,v]);
-			var bs = this.stream.listen((n){
-				
-			});
+			
+			this.listeners.add(k,this.stream.listen((n){
+				if(n is! Array) return;
+				var tag = n[0], content = n[1];
+				if(tag == k) this.data.update(tag,content);
+			}));
+			
 		});
 		return this;
 	}
@@ -112,6 +118,7 @@ class ProjectManager{
 	Storage store;
 	MapDecorator projects;
 	MapDecorator raw;
+	bool _syncable;
 	
 	static create([k]) => new ProjectManager(k);
 	
@@ -130,6 +137,24 @@ class ProjectManager{
 			this.projects.add(k,Project.create(k,ProjectElement()).load(v))
 		});
 		
+	}
+	
+	void freeze(){
+		this._syncable = false;
+	}
+	
+	void sync([String n]){
+		if(!this._syncable) return;
+		
+		if(n != null){
+			var proj = this.projects.get(n);
+			if(proj){
+				this.raw.update(n,proj.data);
+			}
+		}
+		this.projects.onAll((k,v){
+			this.raw.update(k,v.data);
+		});
 	}
 	
 	void reload(){
