@@ -33,19 +33,15 @@ class Project{
 	Project load(json){
 		this.data = new MapDecorator.from(json);
 		data.forEach((k,v){
-			
-			var a = this.stream.listen((n){
-				this.data.update(k,n);				
+			this.data.update(k,v);				
+			this.elem.send([k,v]);
+			var bs = this.stream.listen((n){
+				
 			});
-			this.stream.add(k,a);
-			
 		});
 		return this;
 	}
 	
-	void refresh(){
-		this.load()
-	}
 	
 	void sync(){
 		
@@ -89,6 +85,10 @@ class ProjectElement{
 		
 	}
 	
+	void send(String tag,dynamic content){
+		this.sink.add([tag,content]);
+	}
+	
 	void generate(){
 		this.pipe.pause();
 		this.pipe.send(['lineNumber',this.element.getAttribute('lineNumber')]);
@@ -105,29 +105,64 @@ class ProjectElement{
 }
 
 class ProjectManager{
+	//let the parent be some element we can add a li to that can activate when clicked from a list
+	Element parent;
+	Element List;
 	String editor = "codeeditor";
 	Storage store;
 	MapDecorator projects;
 	MapDecorator raw;
+	
 	static create([k]) => new ProjectManager(k);
 	
-	ProjectManager([String k]){
+	ProjectManager(Element parent,Element list,[String k]){
 		if(k != null) this.editor = k;
 		this.store = Storage.create(this.editor);
+		this.parent = parent;
+		this.list = list;
 		this.init();
 	}
 	
 	void init(){
 		//first turn array into project maps
 		store.load().forEach((n,k){
-			this.raw.add(k,v);
-			this.projects.add(k,Project.create(k).load(v))
+			this.raw.add(k,MapDecorator.from(v));
+			this.projects.add(k,Project.create(k,ProjectElement()).load(v))
 		});
 		
 	}
 	
 	void reload(){
-		
+		this.raws.flush();
+		this.projects.flush();
 		this.init();
+	}
+	
+	void refresh(String name){
+		if(!this.raw.has(k) && !this.projects.has(k)) return;
+		
+		this.remove(name);
+		var item = this.store.load()[name];
+		this.generate(k);
+	}
+	
+	Project generate(String k){
+		var deco = this.raw.get(k);
+		var li = new Element.create('<li id="$k"><a href="#${k}">$k</a></li>');
+		var plane = new Element.create("<div id=${k} createdAt=${ Date.now().toString()} title=${m.get('title')} lineNumber=${m.get('lineNumber')} >
+		 //here put ur text area and render layer that can hide and show like done in project
+		 </div>");
+		 
+		this.list.append(li);
+		this.parent.append(plane);
+		
+		return Project.create(k,plane).load(deco.storage);
+	}
+	
+	void remove(String k){
+		if(!this.raw.has(k) && !this.projects.has(k)) return;
+		
+		this.list.query('.$k').remove();
+		this.parent.query('#$k').remove();
 	}
 }
